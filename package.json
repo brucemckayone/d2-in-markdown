@@ -1,0 +1,78 @@
+{
+  "name": "d2-in-markdown",
+  "displayName": "D2 in Markdown",
+  "description": "Render D2 diagrams in VS Code Markdown preview",
+  "version": "0.0.1",
+  "publisher": "brucemckay",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "configuration": {
+      "title": "D2 in Markdown",
+      "properties": {
+        "d2InMarkdown.theme": {
+          "type": "integer",
+          "default": 0,
+          "description": "The diagram theme ID. (e.g. 0=Neutral, 1=Neutral Dark, 100=Grape, etc.)"
+        },
+        "d2InMarkdown.darkTheme": {
+          "type": "integer",
+          "default": -1,
+          "description": "The theme to use when the viewer is in dark mode. Set to -1 to use the same as 'theme'."
+        },
+        "d2InMarkdown.layout": {
+          "type": "string",
+          "default": "dagre",
+          "enum": [
+            "dagre",
+            "elk"
+          ],
+          "description": "The layout engine used."
+        },
+        "d2InMarkdown.sketch": {
+          "type": "boolean",
+          "default": false,
+          "description": "Render the diagram to look like it was sketched by hand."
+        },
+        "d2InMarkdown.pad": {
+          "type": "integer",
+          "default": 100,
+          "description": "Pixels padded around the rendered diagram."
+        },
+        "d2InMarkdown.scale": {
+          "type": "number",
+          "default": -1,
+          "description": "Scale the output. -1 means fit to screen. 1 means original size."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "d2.configure",
+        "title": "D2: Configure Renderer"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "@types/markdown-it": "^12.2.3",
+    "typescript": "^5.0.0",
+    "eslint": "^8.38.0"
+  }
+}
