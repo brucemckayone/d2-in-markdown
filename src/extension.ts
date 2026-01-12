@@ -1,16 +1,15 @@
 import * as vscode from 'vscode';
+import * as cp from 'child_process';
+import * as path from 'path';
 import { d2Plugin } from './d2Plugin';
 
 export function activate(context: vscode.ExtensionContext) {
     
     // Register the configuration command
-    const disposable = vscode.commands.registerCommand('d2.configure', async () => {
+    const configDisposable = vscode.commands.registerCommand('d2.configure', async () => {
         const config = vscode.workspace.getConfiguration('d2InMarkdown');
-        
-        // Helper to update config
         const update = (key: string, value: any) => config.update(key, value, vscode.ConfigurationTarget.Global);
 
-        // Define themes (Based on d2 themes output)
         const themes = [
             { label: 'Neutral Default', id: 0 },
             { label: 'Neutral Grey', id: 1 },
@@ -34,7 +33,6 @@ export function activate(context: vscode.ExtensionContext) {
             { label: 'C4', id: 303 }
         ];
 
-        // Create main menu items
         const currentThemeId = config.get<number>('theme', 0);
         const currentSketch = config.get<boolean>('sketch', false);
         const currentLayout = config.get<string>('layout', 'dagre');
@@ -46,12 +44,12 @@ export function activate(context: vscode.ExtensionContext) {
                 description: currentThemeLabel,
                 detail: 'Select visual style for diagrams'
             },
-            { 
+            {
                 label: `$(edit) Sketch Mode: ${currentSketch ? 'ON' : 'OFF'}`, 
                 description: 'Toggle hand-drawn style',
                 detail: 'Click to toggle'
             },
-            { 
+            {
                 label: '$(type-hierarchy) Change Layout Engine', 
                 description: currentLayout,
                 detail: 'dagre or elk'
@@ -97,7 +95,102 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(disposable);
+    // Command: Format Block
+    const formatDisposable = vscode.commands.registerCommand('d2.formatBlock', async (range: vscode.Range) => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+
+        const text = editor.document.getText(range);
+        try {
+            const result = cp.spawnSync('d2', ['fmt', '-'], { input: text, encoding: 'utf-8' });
+            if (result.status === 0 && result.stdout) {
+                await editor.edit(editBuilder => {
+                    editBuilder.replace(range, result.stdout.trim());
+                });
+            } else {
+                vscode.window.showErrorMessage(`D2 Format Failed: ${result.stderr}`);
+            }
+        } catch (e: any) {
+            vscode.window.showErrorMessage(`D2 Format Error: ${e.message}`);
+        }
+    });
+
+    // Command: Copy SVG
+    const copySvgDisposable = vscode.commands.registerCommand('d2.copySvg', async (code: string) => {
+        try {
+            // Check for import
+            const importMatch = code.match(/^\s*@import\s+["'](.+)["']\s*$/);
+            let d2Args = ['-'];
+            let input = code;
+
+            if (importMatch && vscode.window.activeTextEditor) {
+                const docPath = vscode.window.activeTextEditor.document.uri.fsPath;
+                const resolvedPath = path.join(path.dirname(docPath), importMatch[1]);
+                d2Args = [resolvedPath, '-'];
+                input = '';
+            }
+
+            const result = cp.spawnSync('d2', d2Args, { input: input || undefined, encoding: 'utf-8' });
+            if (result.status === 0) {
+                await vscode.env.clipboard.writeText(result.stdout);
+                vscode.window.showInformationMessage('SVG copied to clipboard');
+            } else {
+                vscode.window.showErrorMessage(`D2 Export Failed: ${result.stderr}`);
+            }
+        } catch (e: any) {
+            vscode.window.showErrorMessage(`D2 Export Error: ${e.message}`);
+        }
+    });
+
+    // Command: Open Playground
+    const playgroundDisposable = vscode.commands.registerCommand('d2.openPlayground', (code: string) => {
+        const encoded = Buffer.from(code).toString('base64');
+        const url = `https://play.d2lang.com/?script=${encodeURIComponent(encoded)}`;
+        vscode.env.openExternal(vscode.Uri.parse(url));
+    });
+
+    // CodeLens Provider
+    const codeLensProvider = vscode.languages.registerCodeLensProvider({ language: 'markdown' }, {
+        provideCodeLenses(document: vscode.TextDocument) {
+            const lenses: vscode.CodeLens[] = [];
+            const text = document.getText();
+            const re = /```d2\s*([\s\S]*?)```/g;
+            let match;
+
+            while ((match = re.exec(text)) !== null) {
+                const startPos = document.positionAt(match.index);
+                const endPos = document.positionAt(match.index + match[0].length);
+                const range = new vscode.Range(startPos, endPos);
+                
+                // Block content range (excluding backticks)
+                const contentStart = document.positionAt(match.index + match[0].indexOf('\n') + 1);
+                const contentEnd = document.positionAt(match.index + match[0].lastIndexOf('\n'));
+                const contentRange = new vscode.Range(contentStart, contentEnd);
+                const code = match[1].trim();
+
+                lenses.push(
+                    new vscode.CodeLens(range, {
+                        title: '$(pencil) Format',
+                        command: 'd2.formatBlock',
+                        arguments: [contentRange]
+                    }),
+                    new vscode.CodeLens(range, {
+                        title: '$(clippy) Copy SVG',
+                        command: 'd2.copySvg',
+                        arguments: [code]
+                    }),
+                    new vscode.CodeLens(range, {
+                        title: '$(link-external) Playground',
+                        command: 'd2.openPlayground',
+                        arguments: [code]
+                    })
+                );
+            }
+            return lenses;
+        }
+    });
+
+    context.subscriptions.push(configDisposable, formatDisposable, copySvgDisposable, playgroundDisposable, codeLensProvider);
 
     return {
         extendMarkdownIt(md: any) {

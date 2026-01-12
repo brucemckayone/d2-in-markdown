@@ -2,7 +2,7 @@
   "name": "d2-in-markdown",
   "displayName": "D2 in Markdown",
   "description": "Render D2 diagrams in VS Code Markdown preview",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "brucermckay",
   "engines": {
     "vscode": "^1.80.0"
@@ -59,6 +59,34 @@
       {
         "command": "d2.configure",
         "title": "D2: Configure Renderer"
+      },
+      {
+        "command": "d2.formatBlock",
+        "title": "D2: Format Diagram Block"
+      },
+      {
+        "command": "d2.copySvg",
+        "title": "D2: Copy SVG to Clipboard"
+      },
+      {
+        "command": "d2.openPlayground",
+        "title": "D2: Open in Playground"
+      }
+    ],
+    "codeLens": [
+      {
+        "language": "markdown",
+        "command": ""
+      }
+    ],
+    "snippets": [
+      {
+        "language": "d2",
+        "path": "./snippets.json"
+      },
+      {
+        "language": "markdown",
+        "path": "./snippets.json"
       }
     ]
   },

@@ -1,0 +1,38 @@
+{
+  "D2 Connection": {
+    "prefix": "conn",
+    "body": [
+      "${1:x} -> ${2:y}: ${3:hello}"
+    ],
+    "description": "Create a D2 connection"
+  },
+  "D2 Container": {
+    "prefix": "cont",
+    "body": [
+      "${1:name}: {",
+      "  ${2:x} -> ${3:y}",
+      "}"
+    ],
+    "description": "Create a D2 container"
+  },
+  "D2 Class": {
+    "prefix": "class",
+    "body": [
+      "${1:name}: {",
+      "  shape: class",
+      "  ${2:field}: ${3:string}",
+      "}"
+    ],
+    "description": "Create a D2 class"
+  },
+  "D2 SQL Table": {
+    "prefix": "sql",
+    "body": [
+      "${1:table_name}: {",
+      "  shape: sql_table",
+      "  ${2:id}: int {primary_key}",
+      "}"
+    ],
+    "description": "Create a D2 SQL table"
+  }
+}
