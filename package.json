@@ -3,7 +3,7 @@
   "displayName": "D2 in Markdown",
   "description": "Render D2 diagrams in VS Code Markdown preview",
   "version": "0.0.1",
-  "publisher": "brucemckay",
+  "publisher": "brucermckay",
   "engines": {
     "vscode": "^1.80.0"
   },

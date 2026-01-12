@@ -1,37 +1,57 @@
-# D2 in Markdown for VS Code
+# D2 in Markdown
 
-This extension allows you to render [D2](https://d2lang.com/) diagrams directly within your Markdown files in VS Code.
-
-## Features
-
-- **Inline Rendering**: Write D2 code in a fenced code block, and see the diagram in the preview.
-- **Import Support**: Import external D2 files to keep your Markdown clean.
+Render D2 diagrams directly within VS Code Markdown preview. This extension supports both inline code blocks and file imports, offering a lightweight and robust integration with the D2 CLI.
 
 ## Prerequisites
 
-You must have the [D2 CLI](https://d2lang.com/tour/install) installed on your system.
+The D2 CLI must be installed on your system and available in your PATH.
 
-```bash
-# Check if installed
-d2 --version
-```
+1. **Install D2**: Follow the instructions at [d2lang.com/tour/install](https://d2lang.com/tour/install).
+2. **Verify**: Ensure `d2 --version` returns a version number in your terminal.
+
+## Features
+
+- **Inline Rendering**: Renders `d2` fenced code blocks as SVGs directly in the preview.
+- **File Imports**: Supports `@import` syntax to render external `.d2` files without cluttering your Markdown.
+- **Smart Path Resolution**: Resolves import paths relative to the current file or workspace root.
+- **Robust Rendering**: Uses a core-rule interception strategy to prevent conflicts with other D2 extensions.
+- **Configuration**: comprehensive control over themes, layout engines, and visual styles.
 
 ## Usage
 
-### Inline Diagram
+### Inline Diagrams
 
-Use a code block with the language `d2`:
-
-```d2
-x -> y: hello world
-```
-
-### Import Diagram
-
-Use the `@import` syntax inside a `d2` block:
+Create a code block using the `d2` language identifier:
 
 ```d2
-@import "./diagrams/my-diagram.d2"
+direction: right
+x -> y: Hello D2
+y -> z: Connects to Z
 ```
 
-The path is relative to the Markdown file you are editing.
+### Importing Files
+
+Use the `@import` syntax to reference external files.
+
+```d2
+@import "./diagrams/architecture.d2"
+```
+
+## Configuration
+
+You can configure the renderer using the Command Palette or VS Code Settings.
+
+### Quick Configuration
+1. Open the Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`).
+2. Run **D2: Configure Renderer**.
+3. Select an option to change the Theme, Layout Engine, or toggle Sketch Mode. The preview will update immediately.
+
+### Settings
+You can also configure these in your `settings.json`:
+
+- `d2InMarkdown.theme`: The ID of the theme to use (e.g., 0 for Neutral, 6 for Grape Soda, 300 for Terminal).
+- `d2InMarkdown.darkTheme`: Theme to use when VS Code is in dark mode.
+- `d2InMarkdown.layout`: Layout engine (`dagre` or `elk`).
+- `d2InMarkdown.sketch`: Boolean to enable hand-drawn sketch style.
+- `d2InMarkdown.pad`: Padding in pixels around the diagram.
+- `d2InMarkdown.scale`: Scale factor (default -1 fits to screen).
