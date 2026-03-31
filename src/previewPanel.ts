@@ -210,6 +210,7 @@ export class D2PreviewPanel {
         }
         .svg-container svg {
             display: block;
+            max-width: none;
         }
         .placeholder {
             color: var(--vscode-descriptionForeground, #888888);
@@ -286,11 +287,18 @@ export class D2PreviewPanel {
             if (!svg) { scale = 1; panX = 0; panY = 0; applyTransform(); return; }
             const vw = viewport.clientWidth;
             const vh = viewport.clientHeight;
-            const sw = svg.getBoundingClientRect().width / scale || svg.clientWidth;
-            const sh = svg.getBoundingClientRect().height / scale || svg.clientHeight;
-            if (sw === 0 || sh === 0) return;
-            const naturalW = sw / scale || sw;
-            const naturalH = sh / scale || sh;
+            const w = svg.getAttribute('width');
+            const h = svg.getAttribute('height');
+            let naturalW, naturalH;
+            if (w && h) {
+                naturalW = parseFloat(w);
+                naturalH = parseFloat(h);
+            } else {
+                const box = svg.getBoundingClientRect();
+                naturalW = box.width / scale;
+                naturalH = box.height / scale;
+            }
+            if (naturalW === 0 || naturalH === 0 || vw === 0 || vh === 0) return;
             scale = Math.min(vw / naturalW, vh / naturalH, 2) * 0.95;
             panX = (vw - naturalW * scale) / 2;
             panY = (vh - naturalH * scale) / 2;

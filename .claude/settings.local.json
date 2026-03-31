@@ -20,7 +20,26 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(d2 - --theme=0 --layout=dagre --pad=100)",
       "Bash(d2 -)",
-      "Bash(d2 --dry-run -)"
+      "Bash(d2 --dry-run -)",
+      "Bash(grep -E \"\\\\.\\(md|json|yml|yaml|txt\\)$\")",
+      "WebSearch",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(d2 version:*)",
+      "Bash(echo \"a -> b\")",
+      "Bash(d2 --theme=0 --layout=dagre --pad=100 -)",
+      "Bash(where node:*)",
+      "Bash(where npm:*)",
+      "Bash(cmd.exe /c \"where node\")",
+      "Bash(cmd.exe /c \"where npm\")",
+      "Read(//c//**)",
+      "Read(//c/Users/bruce.mckay/AppData/Local/**)",
+      "Read(//c/Users/bruce.mckay/**)",
+      "Read(//c/Users/bruce.mckay/scoop/**)",
+      "Bash(export PATH=\"/c/Users/bruce.mckay/scoop/apps/nodejs/25.8.2:$PATH\")",
+      "Bash(d2 --theme=0 --dark-theme=200 - -)",
+      "Bash(d2 themes:*)"
     ]
   }
 }

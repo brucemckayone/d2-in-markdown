@@ -4,10 +4,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 
 export function d2Plugin(md: any) {
-    // Add a core rule to hijack d2 tokens and render them IMMEDIATELY
-    // We replace the fence token with an html_block token containing the SVG
     md.core.ruler.push("d2_hijack_render", (state: any) => {
-        // Iterate tokens to find d2 fences
         for (let i = 0; i < state.tokens.length; i++) {
             const t = state.tokens[i];
             if (t.type === "fence") {
@@ -91,7 +88,6 @@ export function d2Plugin(md: any) {
                             encoding: "utf-8",
                         });
 
-                        // Create a NEW html_block token
                         const newToken = new state.Token("html_block", "", 0);
 
                         if (result.error) {
@@ -102,7 +98,6 @@ export function d2Plugin(md: any) {
                             newToken.content = `<div class="d2-diagram">${result.stdout}</div>`;
                         }
 
-                        // Replace the fence token with our HTML token
                         state.tokens[i] = newToken;
                     } catch (e: any) {
                         const errToken = new state.Token("html_block", "", 0);
