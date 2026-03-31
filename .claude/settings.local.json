@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(d2 --version)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(rm -rf out)",
+      "Bash(rm -f *.vsix)",
+      "Bash(npx biome:*)",
+      "Bash(cd:*)",
+      "Bash(node -e \"const ext = require\\(''./out/extension.js''\\); console.log\\(''activate:'', typeof ext.activate\\); console.log\\(''exports:'', Object.keys\\(ext\\)\\);\")",
+      "Bash(where beads:*)",
+      "Bash(where bd:*)",
+      "Bash(d2 - -)",
+      "Bash(d2 --help)",
+      "Bash(d2 - - --theme=0 --layout=dagre --pad=100)",
+      "Bash(d2 validate:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(d2 - --theme=0 --layout=dagre --pad=100)",
+      "Bash(d2 -)",
+      "Bash(d2 --dry-run -)"
+    ]
+  }
+}

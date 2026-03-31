@@ -1,0 +1,100 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "D2",
+  "scopeName": "source.d2",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#connection-operator" },
+    { "include": "#spread-operator" },
+    { "include": "#block-string" },
+    { "include": "#string-double" },
+    { "include": "#string-single" },
+    { "include": "#keyword" },
+    { "include": "#shape-type" },
+    { "include": "#direction-value" },
+    { "include": "#boolean" },
+    { "include": "#number" },
+    { "include": "#block-delimiter" },
+    { "include": "#colon-separator" },
+    { "include": "#semicolon" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.d2",
+      "match": "#.*$"
+    },
+    "connection-operator": {
+      "name": "keyword.operator.connection.d2",
+      "match": "<->|->|<-|--"
+    },
+    "spread-operator": {
+      "name": "keyword.operator.spread.d2",
+      "match": "\\.\\.\\."
+    },
+    "block-string": {
+      "name": "string.unquoted.block.d2",
+      "begin": "\\|",
+      "end": "\\|",
+      "patterns": [
+        {
+          "name": "string.unquoted.block.content.d2",
+          "match": "[^|]+"
+        }
+      ]
+    },
+    "string-double": {
+      "name": "string.quoted.double.d2",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.d2",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "string-single": {
+      "name": "string.quoted.single.d2",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.d2",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "keyword": {
+      "name": "keyword.other.d2",
+      "match": "\\b(direction|shape|style|label|icon|tooltip|link|near|constraint|animated|filled|opacity|stroke|stroke-width|stroke-dash|font-size|font-color|bold|italic|underline|shadow|multiple|3d|border-radius)\\b"
+    },
+    "shape-type": {
+      "name": "support.type.shape.d2",
+      "match": "\\b(rectangle|square|oval|circle|diamond|hexagon|cloud|text|code|class|sql_table|image|cylinder|queue|package|step|page|parallelogram|stored_data|person|sequence_diagram)\\b"
+    },
+    "direction-value": {
+      "name": "constant.language.direction.d2",
+      "match": "\\b(up|down|left|right)\\b"
+    },
+    "boolean": {
+      "name": "constant.language.boolean.d2",
+      "match": "\\b(true|false)\\b"
+    },
+    "number": {
+      "name": "constant.numeric.d2",
+      "match": "\\b-?[0-9]+(\\.[0-9]+)?\\b"
+    },
+    "block-delimiter": {
+      "name": "punctuation.section.block.d2",
+      "match": "[{}]"
+    },
+    "colon-separator": {
+      "name": "punctuation.separator.colon.d2",
+      "match": ":"
+    },
+    "semicolon": {
+      "name": "punctuation.terminator.semicolon.d2",
+      "match": ";"
+    }
+  }
+}

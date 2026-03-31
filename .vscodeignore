@@ -1,0 +1,11 @@
+.vscode/**
+.claude/**
+src/**
+node_modules/**
+test-workspace/**
+.gitignore
+biome.json
+tsconfig.json
+*.vsix
+**/*.map
+test.*

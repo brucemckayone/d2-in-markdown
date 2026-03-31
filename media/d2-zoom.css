@@ -1,0 +1,43 @@
+.d2-diagram {
+    position: relative;
+    overflow: hidden;
+    margin: 16px 0;
+    border: 1px solid var(--vscode-panel-border, #ddd);
+    border-radius: 4px;
+    cursor: grab;
+}
+.d2-diagram svg {
+    display: block;
+    will-change: transform;
+}
+.d2-zoom-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    background: var(--vscode-titleBar-activeBackground, #f3f3f3);
+    border-bottom: 1px solid var(--vscode-panel-border, #ddd);
+    user-select: none;
+    position: relative;
+    z-index: 1;
+}
+.d2-zoom-btn {
+    background: var(--vscode-button-secondaryBackground, #e0e0e0);
+    color: var(--vscode-button-secondaryForeground, #333);
+    border: none;
+    padding: 2px 7px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    line-height: 1.4;
+}
+.d2-zoom-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground, #ccc);
+}
+.d2-zoom-level {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground, #888);
+    min-width: 40px;
+    text-align: center;
+}

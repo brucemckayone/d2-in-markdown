@@ -15,7 +15,43 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "d2",
+        "aliases": [
+          "D2",
+          "d2"
+        ],
+        "extensions": [
+          ".d2"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "d2",
+        "scopeName": "source.d2",
+        "path": "./syntaxes/d2.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.d2.codeblock",
+        "path": "./syntaxes/d2-markdown-injection.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.d2": "d2"
+        }
+      }
+    ],
     "markdown.markdownItPlugins": true,
+    "markdown.previewScripts": [
+      "./media/d2-zoom.js"
+    ],
+    "markdown.previewStyles": [
+      "./media/d2-zoom.css"
+    ],
     "configuration": {
       "title": "D2 in Markdown",
       "properties": {
@@ -65,12 +101,20 @@
         "title": "D2: Format Diagram Block"
       },
       {
-        "command": "d2.copySvg",
-        "title": "D2: Copy SVG to Clipboard"
+        "command": "d2.exportDiagram",
+        "title": "D2: Export Diagram"
       },
       {
         "command": "d2.openPlayground",
         "title": "D2: Open in Playground"
+      },
+      {
+        "command": "d2.openPreview",
+        "title": "D2: Open Live Preview"
+      },
+      {
+        "command": "d2.copyError",
+        "title": "D2: Copy Error to Clipboard"
       }
     ],
     "codeLens": [
@@ -91,16 +135,21 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "vscode:prepublish": "npm run compile -- --minify",
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "npm run compile -- --watch",
+    "check": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "package": "vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
-    "@types/node": "^18.0.0",
+    "@biomejs/biome": "^2.4.9",
     "@types/markdown-it": "^12.2.3",
-    "typescript": "^5.0.0",
-    "eslint": "^8.38.0"
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.0.0"
   }
 }

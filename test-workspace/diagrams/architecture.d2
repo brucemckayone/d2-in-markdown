@@ -1,0 +1,10 @@
+direction: right
+
+web: Web Server
+api: API Gateway
+db: Database
+cache: Redis Cache
+
+web -> api: REST
+api -> db: SQL
+api -> cache: GET/SET

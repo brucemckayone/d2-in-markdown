@@ -6,6 +6,7 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
+                "${workspaceFolder}/test-workspace",
                 "--extensionDevelopmentPath=${workspaceFolder}"
             ],
             "outFiles": [
@@ -14,17 +15,17 @@
             "preLaunchTask": "npm: compile"
         },
         {
-            "name": "Extension Tests",
+            "name": "Watch + Run Extension",
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
+                "${workspaceFolder}/test-workspace",
+                "--extensionDevelopmentPath=${workspaceFolder}"
             ],
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"
             ],
-            "preLaunchTask": "npm: compile"
+            "preLaunchTask": "npm: watch"
         }
     ]
 }
