@@ -128,10 +128,17 @@ export class D2PreviewPanel {
         if (result.status !== 0) {
             return `<p class="error">D2 error:</p><pre class="error-detail">${this.escapeHtml(result.stderr)}</pre>`;
         }
+        // Strip XML declaration (invalid in HTML) and ensure outer SVG has explicit dimensions
+        let svgOutput = result.stdout.replace(/<\?xml[^?]*\?>/, "").trim();
+        // If outer SVG has viewBox but no width/height, add them
+        const vbMatch = svgOutput.match(/^<svg([^>]*)viewBox="[\d.\-\s]+ [\d.\-\s]+ ([\d.]+) ([\d.]+)"/);
+        if (vbMatch && !svgOutput.match(/^<svg[^>]*\bwidth=/)) {
+            svgOutput = svgOutput.replace(/^<svg/, `<svg width="${vbMatch[2]}" height="${vbMatch[3]}"`);
+        }
         const config2 = vscode.workspace.getConfiguration("d2InMarkdown");
         const autoTheme = config2.get<boolean>("autoTheme", true);
         const containerClass = autoTheme ? "svg-container d2-auto-theme" : "svg-container";
-        return `<div class="${containerClass}">${result.stdout}</div>`;
+        return `<div class="${containerClass}">${svgOutput}</div>`;
     }
 
     private escapeHtml(text: string): string {
@@ -149,26 +156,27 @@ export class D2PreviewPanel {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body {
+        html, body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background: var(--vscode-editor-background, #1e1e1e);
             color: var(--vscode-editor-foreground, #cccccc);
             font-family: var(--vscode-font-family, sans-serif);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            height: 100%;
+            width: 100%;
         }
         .toolbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
             display: flex;
             align-items: center;
             gap: 4px;
             padding: 4px 8px;
             background: var(--vscode-titleBar-activeBackground, #333);
             border-bottom: 1px solid var(--vscode-panel-border, #444);
-            flex-shrink: 0;
             user-select: none;
+            z-index: 100;
         }
         .toolbar button {
             background: var(--vscode-button-secondaryBackground, #3a3d41);
@@ -195,25 +203,26 @@ export class D2PreviewPanel {
             background: var(--vscode-panel-border, #444);
             margin: 0 4px;
         }
-        .viewport {
-            flex: 1;
-            overflow: hidden;
-            position: relative;
+        #diagram-area {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
             cursor: grab;
         }
-        .viewport.panning {
+        #diagram-area.panning {
             cursor: grabbing;
         }
-        .canvas {
-            position: absolute;
+        #diagram-wrapper {
             transform-origin: 0 0;
+        }
+        #diagram-wrapper svg {
+            display: block;
         }
         .svg-container {
             display: inline-block;
-        }
-        .svg-container svg {
-            display: block;
-            max-width: none;
         }
         .placeholder {
             color: var(--vscode-descriptionForeground, #888888);
@@ -268,83 +277,74 @@ export class D2PreviewPanel {
         <button id="zoom-fit" title="Fit to view">Fit</button>
         <button id="zoom-reset" title="Reset to 100%">1:1</button>
     </div>
-    <div class="viewport" id="viewport">
-        <div class="canvas" id="canvas">
-            ${body}
-        </div>
+    <div id="diagram-area">
+        <div id="diagram-wrapper">${body}</div>
     </div>
     <script>
     (function() {
-        const viewport = document.getElementById('viewport');
-        const canvas = document.getElementById('canvas');
-        const zoomLevelEl = document.getElementById('zoom-level');
+        var area = document.getElementById('diagram-area');
+        var wrapper = document.getElementById('diagram-wrapper');
+        var zoomLevelEl = document.getElementById('zoom-level');
 
-        let scale = 1;
-        let panX = 0;
-        let panY = 0;
-        let isPanning = false;
-        let startX = 0;
-        let startY = 0;
-
-        const MIN_SCALE = 0.1;
-        const MAX_SCALE = 10;
-        const ZOOM_STEP = 0.15;
+        var scale = 1, panX = 0, panY = 0;
+        var isPanning = false, startX = 0, startY = 0;
+        var MIN_SCALE = 0.05, MAX_SCALE = 10, ZOOM_STEP = 0.15;
 
         function applyTransform() {
-            canvas.style.transform =
-                'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+            wrapper.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
             zoomLevelEl.textContent = Math.round(scale * 100) + '%';
         }
 
         function zoomAt(delta, cx, cy) {
-            const oldScale = scale;
+            var oldScale = scale;
             scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (1 + delta)));
-            const ratio = scale / oldScale;
+            var ratio = scale / oldScale;
             panX = cx - ratio * (cx - panX);
             panY = cy - ratio * (cy - panY);
             applyTransform();
         }
 
-        function fitToView() {
-            const svg = canvas.querySelector('svg');
-            if (!svg) { scale = 1; panX = 0; panY = 0; applyTransform(); return; }
-            const vw = viewport.clientWidth;
-            const vh = viewport.clientHeight;
-            const w = svg.getAttribute('width');
-            const h = svg.getAttribute('height');
-            let naturalW, naturalH;
-            if (w && h) {
-                naturalW = parseFloat(w);
-                naturalH = parseFloat(h);
-            } else {
-                const box = svg.getBoundingClientRect();
-                naturalW = box.width / scale;
-                naturalH = box.height / scale;
+        function getNaturalSize() {
+            var svg = wrapper.querySelector('svg');
+            if (!svg) return null;
+            var w = svg.getAttribute('width');
+            var h = svg.getAttribute('height');
+            if (w && h) return { w: parseFloat(w), h: parseFloat(h) };
+            var vb = svg.getAttribute('viewBox');
+            if (vb) {
+                var parts = vb.split(/[\\s,]+/);
+                if (parts.length === 4) return { w: parseFloat(parts[2]), h: parseFloat(parts[3]) };
             }
-            if (naturalW === 0 || naturalH === 0 || vw === 0 || vh === 0) return;
-            scale = Math.min(vw / naturalW, vh / naturalH, 2) * 0.95;
-            panX = (vw - naturalW * scale) / 2;
-            panY = (vh - naturalH * scale) / 2;
+            // Measure by temporarily resetting
+            wrapper.style.transform = 'none';
+            var rect = svg.getBoundingClientRect();
+            return { w: rect.width, h: rect.height };
+        }
+
+        function fitToView() {
+            var size = getNaturalSize();
+            if (!size || size.w === 0 || size.h === 0) return;
+            var aw = area.clientWidth;
+            var ah = area.clientHeight;
+            if (aw === 0 || ah === 0) return;
+            scale = Math.min(aw / size.w, ah / size.h, 2) * 0.95;
+            panX = (aw - size.w * scale) / 2;
+            panY = (ah - size.h * scale) / 2;
             applyTransform();
         }
 
-        // Wheel zoom (Ctrl+wheel or just wheel)
-        viewport.addEventListener('wheel', function(e) {
+        area.addEventListener('wheel', function(e) {
             e.preventDefault();
-            const rect = viewport.getBoundingClientRect();
-            const cx = e.clientX - rect.left;
-            const cy = e.clientY - rect.top;
-            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-            zoomAt(delta, cx, cy);
+            var rect = area.getBoundingClientRect();
+            zoomAt(e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP, e.clientX - rect.left, e.clientY - rect.top);
         }, { passive: false });
 
-        // Pan with mouse drag
-        viewport.addEventListener('mousedown', function(e) {
+        area.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             isPanning = true;
             startX = e.clientX - panX;
             startY = e.clientY - panY;
-            viewport.classList.add('panning');
+            area.classList.add('panning');
         });
         window.addEventListener('mousemove', function(e) {
             if (!isPanning) return;
@@ -354,25 +354,23 @@ export class D2PreviewPanel {
         });
         window.addEventListener('mouseup', function() {
             isPanning = false;
-            viewport.classList.remove('panning');
+            area.classList.remove('panning');
         });
 
-        // Toolbar buttons
         document.getElementById('zoom-in').addEventListener('click', function() {
-            const rect = viewport.getBoundingClientRect();
-            zoomAt(ZOOM_STEP, rect.width / 2, rect.height / 2);
+            var r = area.getBoundingClientRect();
+            zoomAt(ZOOM_STEP, r.width / 2, r.height / 2);
         });
         document.getElementById('zoom-out').addEventListener('click', function() {
-            const rect = viewport.getBoundingClientRect();
-            zoomAt(-ZOOM_STEP, rect.width / 2, rect.height / 2);
+            var r = area.getBoundingClientRect();
+            zoomAt(-ZOOM_STEP, r.width / 2, r.height / 2);
         });
         document.getElementById('zoom-reset').addEventListener('click', function() {
             scale = 1; panX = 0; panY = 0; applyTransform();
         });
         document.getElementById('zoom-fit').addEventListener('click', fitToView);
 
-        // Auto-fit on first load
-        requestAnimationFrame(fitToView);
+        setTimeout(fitToView, 150);
     })();
     </script>
 </body>

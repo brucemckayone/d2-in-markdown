@@ -399,11 +399,16 @@ export function activate(context: vscode.ExtensionContext) {
             (d) => d.uri.toString() === previewDocUri?.toString(),
         );
         if (!doc) return;
-        const blocks = getD2Blocks(doc);
-        const code =
-            previewBlockIndex < blocks.length
-                ? blocks[previewBlockIndex]
-                : undefined;
+        let code: string | undefined;
+        if (doc.languageId === "d2") {
+            code = doc.getText().trim() || undefined;
+        } else {
+            const blocks = getD2Blocks(doc);
+            code =
+                previewBlockIndex < blocks.length
+                    ? blocks[previewBlockIndex]
+                    : undefined;
+        }
         previewPanel.update(code, doc.uri);
     }
 
@@ -414,16 +419,18 @@ export function activate(context: vscode.ExtensionContext) {
             const blockIdx: number = typeof args[1] === "number" ? args[1] : 0;
             const editor = vscode.window.activeTextEditor;
 
-            // Resolve code: use argument from CodeLens, or fall back to first block
+            // Resolve code: use argument from CodeLens, or fall back to document content
             let resolvedCode = code;
             let resolvedIndex = blockIdx;
-            if (
-                resolvedCode === undefined &&
-                editor?.document.languageId === "markdown"
-            ) {
-                const blocks = getD2Blocks(editor.document);
-                if (blocks.length > 0) {
-                    resolvedCode = blocks[0];
+            if (resolvedCode === undefined && editor) {
+                if (editor.document.languageId === "markdown") {
+                    const blocks = getD2Blocks(editor.document);
+                    if (blocks.length > 0) {
+                        resolvedCode = blocks[0];
+                        resolvedIndex = 0;
+                    }
+                } else if (editor.document.languageId === "d2") {
+                    resolvedCode = editor.document.getText().trim();
                     resolvedIndex = 0;
                 }
             }
@@ -445,7 +452,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (
                 !previewPanel ||
                 previewPanel.isDisposed() ||
-                event.document.languageId !== "markdown" ||
+                (event.document.languageId !== "markdown" && event.document.languageId !== "d2") ||
                 event.document.uri.toString() !== previewDocUri?.toString()
             ) {
                 return;
@@ -463,7 +470,41 @@ export function activate(context: vscode.ExtensionContext) {
     const diagnosticCollection =
         vscode.languages.createDiagnosticCollection("d2");
 
-    // CodeLens Provider
+    // CodeLens Provider for .d2 files
+    const d2CodeLensProvider = vscode.languages.registerCodeLensProvider(
+        { language: "d2" },
+        {
+            provideCodeLenses(document: vscode.TextDocument) {
+                const lenses: vscode.CodeLens[] = [];
+                const range = new vscode.Range(
+                    document.positionAt(0),
+                    document.positionAt(0),
+                );
+                const code = document.getText().trim();
+
+                lenses.push(
+                    new vscode.CodeLens(range, {
+                        title: "$(open-preview) Preview",
+                        command: "d2.openPreview",
+                        arguments: [code, 0],
+                    }),
+                    new vscode.CodeLens(range, {
+                        title: "$(export) Export",
+                        command: "d2.exportDiagram",
+                        arguments: [code],
+                    }),
+                    new vscode.CodeLens(range, {
+                        title: "$(link-external) Playground",
+                        command: "d2.openPlayground",
+                        arguments: [code],
+                    }),
+                );
+                return lenses;
+            },
+        },
+    );
+
+    // CodeLens Provider for Markdown
     const codeLensProvider = vscode.languages.registerCodeLensProvider(
         { language: "markdown" },
         {
@@ -592,6 +633,7 @@ export function activate(context: vscode.ExtensionContext) {
         previewDisposable,
         onDocChangeForPreviewDisposable,
         codeLensProvider,
+        d2CodeLensProvider,
         diagnosticCollection,
         onOpenDisposable,
         onSaveDisposable,

@@ -4,14 +4,18 @@
     margin: 16px 0;
     border: 1px solid var(--vscode-panel-border, #ddd);
     border-radius: 4px;
+    cursor: pointer;
+}
+.d2-diagram.d2-active {
     cursor: grab;
+    border-color: var(--vscode-focusBorder, #007acc);
 }
 .d2-diagram svg {
     display: block;
     will-change: transform;
 }
 .d2-zoom-toolbar {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 4px;
     padding: 3px 6px;
@@ -20,8 +24,9 @@
     user-select: none;
     position: relative;
     z-index: 1;
-}
-.d2-zoom-btn {
+}.d2-diagram.d2-active .d2-zoom-toolbar {
+    display: flex;
+}.d2-zoom-btn {
     background: var(--vscode-button-secondaryBackground, #e0e0e0);
     color: var(--vscode-button-secondaryForeground, #333);
     border: none;
@@ -40,6 +45,21 @@
     color: var(--vscode-descriptionForeground, #888);
     min-width: 40px;
     text-align: center;
+}
+.d2-fullscreen-btn {
+    margin-left: auto;
+}
+.d2-diagram.d2-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    z-index: 9999;
+    background: var(--vscode-editor-background, #1e1e1e);
 }
 
 /* Auto-theme: override D2 color classes with VS Code theme variables */

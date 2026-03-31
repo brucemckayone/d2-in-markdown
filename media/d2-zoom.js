@@ -27,7 +27,8 @@
             '<button class="d2-zoom-btn" data-action="out" title="Zoom out">&minus;</button>' +
             '<span class="d2-zoom-level">100%</span>' +
             '<button class="d2-zoom-btn" data-action="fit" title="Fit">Fit</button>' +
-            '<button class="d2-zoom-btn" data-action="reset" title="Reset">1:1</button>';
+            '<button class="d2-zoom-btn" data-action="reset" title="Reset">1:1</button>' +
+            '<button class="d2-zoom-btn d2-fullscreen-btn" data-action="fullscreen" title="Toggle fullscreen">&#x26F6;</button>';
         container.insertBefore(toolbar, container.firstChild);
 
         var zoomLevelEl = toolbar.querySelector(".d2-zoom-level");
@@ -58,8 +59,39 @@
             applyTransform();
         }
 
-        // Wheel zoom on the container
+        function isActive() {
+            return container.classList.contains("d2-active");
+        }
+
+        function deactivate() {
+            container.classList.remove("d2-active");
+            // Exit fullscreen if active
+            if (container.classList.contains("d2-fullscreen")) {
+                container.classList.remove("d2-fullscreen");
+                var fsBtn = toolbar.querySelector('[data-action="fullscreen"]');
+                if (fsBtn) { fsBtn.innerHTML = "&#x26F6;"; fsBtn.title = "Toggle fullscreen"; }
+            }
+            scale = 1; panX = 0; panY = 0; applyTransform();
+        }
+
+        // Click to activate
+        container.addEventListener("click", function (e) {
+            if (!isActive() && !e.target.closest(".d2-zoom-toolbar")) {
+                e.stopPropagation();
+                container.classList.add("d2-active");
+            }
+        });
+
+        // Click outside to deactivate
+        document.addEventListener("mousedown", function (e) {
+            if (isActive() && !container.contains(e.target)) {
+                deactivate();
+            }
+        });
+
+        // Wheel zoom on the container (only when active)
         container.addEventListener("wheel", function (e) {
+            if (!isActive()) return;
             e.preventDefault();
             e.stopPropagation();
             var rect = container.getBoundingClientRect();
@@ -69,8 +101,9 @@
             zoomAt(delta, cx, cy);
         }, { passive: false });
 
-        // Pan via mouse drag on the container
+        // Pan via mouse drag on the container (only when active)
         container.addEventListener("mousedown", function (e) {
+            if (!isActive()) return;
             if (e.button !== 0 || e.target.closest(".d2-zoom-toolbar")) return;
             isPanning = true;
             startX = e.clientX - panX;
@@ -100,6 +133,31 @@
             else if (action === "out") zoomAt(-ZOOM_STEP, rect.width / 2, rect.height / 2);
             else if (action === "reset") { scale = 1; panX = 0; panY = 0; applyTransform(); }
             else if (action === "fit") fitToView();
+            else if (action === "fullscreen") {
+                container.classList.toggle("d2-fullscreen");
+                var isFs = container.classList.contains("d2-fullscreen");
+                btn.innerHTML = isFs ? "&#x2716;" : "&#x26F6;";
+                btn.title = isFs ? "Exit fullscreen" : "Toggle fullscreen";
+                if (isFs) {
+                    setTimeout(fitToView, 50);
+                } else {
+                    scale = 1; panX = 0; panY = 0; applyTransform();
+                }
+            }
+        });
+
+        // Escape key exits fullscreen or deactivates
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                if (container.classList.contains("d2-fullscreen")) {
+                    container.classList.remove("d2-fullscreen");
+                    var fsBtn = toolbar.querySelector('[data-action="fullscreen"]');
+                    if (fsBtn) { fsBtn.innerHTML = "&#x26F6;"; fsBtn.title = "Toggle fullscreen"; }
+                    scale = 1; panX = 0; panY = 0; applyTransform();
+                } else if (isActive()) {
+                    deactivate();
+                }
+            }
         });
     }
 
