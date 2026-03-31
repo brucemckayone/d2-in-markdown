@@ -88,6 +88,11 @@
           "type": "number",
           "default": -1,
           "description": "Scale the output. -1 means fit to screen. 1 means original size."
+        },
+        "d2InMarkdown.autoTheme": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically match diagram colors to your VS Code theme."
         }
       }
     },

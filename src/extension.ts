@@ -56,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
             const currentThemeId = config.get<number>("theme", 0);
             const currentSketch = config.get<boolean>("sketch", false);
             const currentLayout = config.get<string>("layout", "dagre");
+            const currentAutoTheme = config.get<boolean>("autoTheme", true);
             const currentThemeLabel =
                 themes.find((t) => t.id === currentThemeId)?.label ||
                 `Custom (${currentThemeId})`;
@@ -75,6 +76,11 @@ export function activate(context: vscode.ExtensionContext) {
                     label: "$(type-hierarchy) Change Layout Engine",
                     description: currentLayout,
                     detail: "dagre or elk",
+                },
+                {
+                    label: `$(color-mode) Auto-Theme: ${currentAutoTheme ? "ON" : "OFF"}`,
+                    description: "Match diagram colors to VS Code theme",
+                    detail: "Click to toggle",
                 },
                 {
                     label: "$(settings-gear) Open All Settings",
@@ -122,6 +128,12 @@ export function activate(context: vscode.ExtensionContext) {
                     );
                     vscode.commands.executeCommand("markdown.preview.refresh"); // Force refresh
                 }
+            } else if (selection.label.includes("Auto-Theme")) {
+                await update("autoTheme", !currentAutoTheme);
+                vscode.window.showInformationMessage(
+                    `D2 Auto-Theme turned ${!currentAutoTheme ? "ON" : "OFF"}`,
+                );
+                vscode.commands.executeCommand("markdown.preview.refresh");
             } else if (selection.label.includes("Open All Settings")) {
                 vscode.commands.executeCommand(
                     "workbench.action.openSettings",

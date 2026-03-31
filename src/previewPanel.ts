@@ -128,7 +128,10 @@ export class D2PreviewPanel {
         if (result.status !== 0) {
             return `<p class="error">D2 error:</p><pre class="error-detail">${this.escapeHtml(result.stderr)}</pre>`;
         }
-        return `<div class="svg-container">${result.stdout}</div>`;
+        const config2 = vscode.workspace.getConfiguration("d2InMarkdown");
+        const autoTheme = config2.get<boolean>("autoTheme", true);
+        const containerClass = autoTheme ? "svg-container d2-auto-theme" : "svg-container";
+        return `<div class="${containerClass}">${result.stdout}</div>`;
     }
 
     private escapeHtml(text: string): string {
@@ -234,6 +237,26 @@ export class D2PreviewPanel {
             margin: 8px 16px;
             max-width: calc(100% - 32px);
         }
+        /* Auto-theme: override D2 color classes with VS Code theme variables */
+        .d2-auto-theme [class*="fill-N1"] { fill: var(--vscode-editor-foreground) !important; }
+        .d2-auto-theme [class*="fill-N2"] { fill: var(--vscode-descriptionForeground) !important; }
+        .d2-auto-theme [class*="fill-N3"] { fill: var(--vscode-disabledForeground) !important; }
+        .d2-auto-theme [class*="fill-N4"] { fill: var(--vscode-sideBar-background) !important; }
+        .d2-auto-theme [class*="fill-N5"] { fill: var(--vscode-editorWidget-background) !important; }
+        .d2-auto-theme [class*="fill-N6"] { fill: var(--vscode-editorWidget-background) !important; }
+        .d2-auto-theme [class*="fill-N7"] { fill: var(--vscode-editor-background) !important; }
+        .d2-auto-theme [class*="fill-B1"] { fill: var(--vscode-focusBorder) !important; }
+        .d2-auto-theme [class*="fill-B2"] { fill: var(--vscode-focusBorder) !important; }
+        .d2-auto-theme [class*="fill-B3"] { fill: var(--vscode-sideBar-background) !important; }
+        .d2-auto-theme [class*="fill-B4"] { fill: var(--vscode-sideBar-background) !important; }
+        .d2-auto-theme [class*="fill-B5"] { fill: var(--vscode-editorWidget-background) !important; }
+        .d2-auto-theme [class*="fill-B6"] { fill: var(--vscode-editorWidget-background) !important; }
+        .d2-auto-theme [class*="stroke-N1"] { stroke: var(--vscode-editor-foreground) !important; }
+        .d2-auto-theme [class*="stroke-N2"] { stroke: var(--vscode-descriptionForeground) !important; }
+        .d2-auto-theme [class*="stroke-N3"] { stroke: var(--vscode-disabledForeground) !important; }
+        .d2-auto-theme [class*="stroke-N4"] { stroke: var(--vscode-disabledForeground) !important; }
+        .d2-auto-theme [class*="stroke-B1"] { stroke: var(--vscode-focusBorder) !important; }
+        .d2-auto-theme [class*="stroke-B2"] { stroke: var(--vscode-focusBorder) !important; }
     </style>
 </head>
 <body>

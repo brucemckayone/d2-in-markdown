@@ -61,6 +61,7 @@ export function d2Plugin(md: any) {
                         // Read configuration
                         const config =
                             vscode.workspace.getConfiguration("d2InMarkdown");
+                        const autoTheme = config.get<boolean>("autoTheme", true);
                         const theme = config.get<number>("theme", 0);
                         const darkTheme = config.get<number>("darkTheme", -1);
                         const layout = config.get<string>("layout", "dagre");
@@ -95,7 +96,8 @@ export function d2Plugin(md: any) {
                         } else if (result.status !== 0) {
                             newToken.content = `<div style="color: red; border: 1px solid red; padding: 10px;"><strong>D2 Error:</strong><pre>${result.stderr}</pre></div>`;
                         } else {
-                            newToken.content = `<div class="d2-diagram">${result.stdout}</div>`;
+                            const wrapperClass = autoTheme ? "d2-diagram d2-auto-theme" : "d2-diagram";
+                            newToken.content = `<div class="${wrapperClass}">${result.stdout}</div>`;
                         }
 
                         state.tokens[i] = newToken;
