@@ -28,6 +28,7 @@
             '<span class="d2-zoom-level">100%</span>' +
             '<button class="d2-zoom-btn" data-action="fit" title="Fit">Fit</button>' +
             '<button class="d2-zoom-btn" data-action="reset" title="Reset">1:1</button>' +
+            '<button class="d2-zoom-btn" data-action="copy" title="Copy as image">Copy</button>' +
             '<button class="d2-zoom-btn d2-fullscreen-btn" data-action="fullscreen" title="Toggle fullscreen">&#x26F6;</button>';
         container.insertBefore(toolbar, container.firstChild);
 
@@ -72,6 +73,73 @@
                 if (fsBtn) { fsBtn.innerHTML = "&#x26F6;"; fsBtn.title = "Toggle fullscreen"; }
             }
             scale = 1; panX = 0; panY = 0; applyTransform();
+        }
+
+        function inlineStyles(source, clone) {
+            var props = ['fill','stroke','color','opacity','font-family','font-size','font-weight','font-style',
+                         'stroke-width','stroke-dasharray','stroke-linecap','stroke-linejoin','stroke-opacity',
+                         'fill-opacity','text-anchor','dominant-baseline','visibility','display'];
+            var srcEls = source.querySelectorAll('*');
+            var clnEls = clone.querySelectorAll('*');
+            for (var ii = 0; ii < srcEls.length; ii++) {
+                var cs = window.getComputedStyle(srcEls[ii]);
+                for (var jj = 0; jj < props.length; jj++) {
+                    var val = cs.getPropertyValue(props[jj]);
+                    if (val) clnEls[ii].style.setProperty(props[jj], val);
+                }
+            }
+        }
+
+        function copyAsImage() {
+            var copyBtn = toolbar.querySelector('[data-action="copy"]');
+            var origText = copyBtn.innerHTML;
+
+            var containerRect = container.getBoundingClientRect();
+            var toolbarRect = toolbar.getBoundingClientRect();
+            var dpr = window.devicePixelRatio || 1;
+            var cw = containerRect.width;
+            var ch = containerRect.height - toolbarRect.height;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = cw * dpr;
+            canvas.height = ch * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            var bg = window.getComputedStyle(container).backgroundColor;
+            if (!bg || bg === 'rgba(0, 0, 0, 0)') bg = window.getComputedStyle(document.body).backgroundColor || '#ffffff';
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.translate(panX, panY);
+            ctx.scale(scale, scale);
+
+            var clone = svg.cloneNode(true);
+            inlineStyles(svg, clone);
+            clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+            var svgData = new XMLSerializer().serializeToString(clone);
+            var svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+            var img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob(function(pngBlob) {
+                    if (!pngBlob) { copyBtn.textContent = 'Failed'; setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500); return; }
+                    navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': pngBlob })
+                    ]).then(function() {
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500);
+                    }).catch(function() {
+                        copyBtn.textContent = 'Failed';
+                        setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500);
+                    });
+                }, 'image/png');
+            };
+            img.onerror = function() {
+                copyBtn.textContent = 'Failed';
+                setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500);
+            };
+            img.src = svgDataUrl;
         }
 
         // Click to activate
@@ -133,6 +201,7 @@
             else if (action === "out") zoomAt(-ZOOM_STEP, rect.width / 2, rect.height / 2);
             else if (action === "reset") { scale = 1; panX = 0; panY = 0; applyTransform(); }
             else if (action === "fit") fitToView();
+            else if (action === "copy") copyAsImage();
             else if (action === "fullscreen") {
                 container.classList.toggle("d2-fullscreen");
                 var isFs = container.classList.contains("d2-fullscreen");

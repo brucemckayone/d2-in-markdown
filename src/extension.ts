@@ -324,13 +324,14 @@ export function activate(context: vscode.ExtensionContext) {
         },
     );
 
-    // Command: Open Playground
-    const playgroundDisposable = vscode.commands.registerCommand(
-        "d2.openPlayground",
-        (code: string) => {
-            const encoded = Buffer.from(code).toString("base64");
-            const url = `https://play.d2lang.com/?script=${encodeURIComponent(encoded)}`;
-            vscode.env.openExternal(vscode.Uri.parse(url));
+    // Command: Edit Block (jump to D2 block in editor)
+    const editBlockDisposable = vscode.commands.registerCommand(
+        "d2.editBlock",
+        async (range: vscode.Range) => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+            editor.selection = new vscode.Selection(range.start, range.start);
+            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
         },
     );
 
@@ -493,11 +494,6 @@ export function activate(context: vscode.ExtensionContext) {
                         command: "d2.exportDiagram",
                         arguments: [code],
                     }),
-                    new vscode.CodeLens(range, {
-                        title: "$(link-external) Playground",
-                        command: "d2.openPlayground",
-                        arguments: [code],
-                    }),
                 );
                 return lenses;
             },
@@ -551,14 +547,14 @@ export function activate(context: vscode.ExtensionContext) {
                             arguments: [code],
                         }),
                         new vscode.CodeLens(range, {
-                            title: "$(link-external) Playground",
-                            command: "d2.openPlayground",
-                            arguments: [code],
-                        }),
-                        new vscode.CodeLens(range, {
                             title: "$(open-preview) Preview",
                             command: "d2.openPreview",
                             arguments: [code, blockIndex],
+                        }),
+                        new vscode.CodeLens(range, {
+                            title: "$(edit) Edit",
+                            command: "d2.editBlock",
+                            arguments: [contentRange],
                         }),
                     );
 
@@ -619,6 +615,28 @@ export function activate(context: vscode.ExtensionContext) {
         debounceTimers.delete(doc.uri.toString());
     });
 
+    // Folding range provider for D2 blocks in markdown
+    const foldingProvider = vscode.languages.registerFoldingRangeProvider(
+        { language: "markdown" },
+        {
+            provideFoldingRanges(document: vscode.TextDocument) {
+                const ranges: vscode.FoldingRange[] = [];
+                const text = document.getText();
+                const re = /```d2\s*[\s\S]*?```/g;
+                let match: RegExpExecArray | null = re.exec(text);
+                while (match !== null) {
+                    const startLine = document.positionAt(match.index).line;
+                    const endLine = document.positionAt(match.index + match[0].length).line;
+                    if (endLine > startLine) {
+                        ranges.push(new vscode.FoldingRange(startLine, endLine, vscode.FoldingRangeKind.Region));
+                    }
+                    match = re.exec(text);
+                }
+                return ranges;
+            },
+        },
+    );
+
     // Run diagnostics for any already-open markdown documents
     for (const doc of vscode.workspace.textDocuments) {
         updateDiagnostics(doc, diagnosticCollection);
@@ -629,7 +647,7 @@ export function activate(context: vscode.ExtensionContext) {
         formatDisposable,
         exportDisposable,
         copyErrorDisposable,
-        playgroundDisposable,
+        editBlockDisposable,
         previewDisposable,
         onDocChangeForPreviewDisposable,
         codeLensProvider,
@@ -639,6 +657,7 @@ export function activate(context: vscode.ExtensionContext) {
         onSaveDisposable,
         onChangeDisposable,
         onCloseDisposable,
+        foldingProvider,
     );
 
     return {

@@ -23,6 +23,35 @@ export class D2PreviewPanel {
 
         this.panel.iconPath = undefined;
         this.panel.webview.html = D2PreviewPanel.buildHtml("");
+
+        this.panel.webview.onDidReceiveMessage(async (message) => {
+            if (message.type === "setLayout") {
+                const config = vscode.workspace.getConfiguration("d2InMarkdown");
+                await config.update("layout", message.value, vscode.ConfigurationTarget.Global);
+            } else if (message.type === "copyImage" && typeof message.data === "string") {
+                try {
+                    const base64 = message.data.replace(/^data:image\/png;base64,/, "");
+                    const buffer = Buffer.from(base64, "base64");
+                    const tmpPath = path.join(require("node:os").tmpdir(), `d2-clipboard-${Date.now()}.png`);
+                    fs.writeFileSync(tmpPath, buffer);
+                    const platform = process.platform;
+                    if (platform === "win32") {
+                        cp.spawnSync("powershell", ["-NoProfile", "-Command",
+                            `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('${tmpPath}'))`
+                        ]);
+                    } else if (platform === "darwin") {
+                        cp.spawnSync("osascript", ["-e", `set the clipboard to (read (POSIX file "${tmpPath}") as «class PNGf»)`]);
+                    } else {
+                        cp.spawnSync("xclip", ["-selection", "clipboard", "-t", "image/png", "-i", tmpPath]);
+                    }
+                    fs.unlinkSync(tmpPath);
+                    vscode.window.showInformationMessage("Diagram copied to clipboard");
+                } catch (e: any) {
+                    vscode.window.showErrorMessage(`Failed to copy image: ${e.message}`);
+                }
+            }
+        });
+
         this.panel.onDidDispose(() => {
             this.disposed = true;
             D2PreviewPanel.instance = undefined;
@@ -53,15 +82,19 @@ export class D2PreviewPanel {
             return;
         }
 
+        const config = vscode.workspace.getConfiguration("d2InMarkdown");
+        const currentLayout = config.get<string>("layout", "dagre");
+
         if (code === undefined) {
             this.panel.webview.html = D2PreviewPanel.buildHtml(
                 '<p class="placeholder">No D2 block found. Click "Preview" on a D2 code block or open a Markdown file with D2 blocks.</p>',
+                currentLayout,
             );
             return;
         }
 
         const svg = this.renderD2(code, documentUri);
-        this.panel.webview.html = D2PreviewPanel.buildHtml(svg);
+        this.panel.webview.html = D2PreviewPanel.buildHtml(svg, currentLayout);
     }
 
     private renderD2(
@@ -149,7 +182,8 @@ export class D2PreviewPanel {
             .replace(/"/g, "&quot;");
     }
 
-    private static buildHtml(body: string): string {
+    private static buildHtml(body: string, layout?: string): string {
+        const currentLayout = layout || "dagre";
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -276,6 +310,10 @@ export class D2PreviewPanel {
         <div class="sep"></div>
         <button id="zoom-fit" title="Fit to view">Fit</button>
         <button id="zoom-reset" title="Reset to 100%">1:1</button>
+        <div class="sep"></div>
+        <button id="layout-toggle" title="Switch layout engine">${currentLayout}</button>
+        <div class="sep"></div>
+        <button id="copy-image" title="Copy diagram as image">Copy</button>
     </div>
     <div id="diagram-area">
         <div id="diagram-wrapper">${body}</div>
@@ -369,6 +407,75 @@ export class D2PreviewPanel {
             scale = 1; panX = 0; panY = 0; applyTransform();
         });
         document.getElementById('zoom-fit').addEventListener('click', fitToView);
+
+        function inlineStyles(source, clone) {
+            var props = ['fill','stroke','color','opacity','font-family','font-size','font-weight','font-style',
+                         'stroke-width','stroke-dasharray','stroke-linecap','stroke-linejoin','stroke-opacity',
+                         'fill-opacity','text-anchor','dominant-baseline','visibility','display'];
+            var srcEls = source.querySelectorAll('*');
+            var clnEls = clone.querySelectorAll('*');
+            for (var i = 0; i < srcEls.length; i++) {
+                var cs = window.getComputedStyle(srcEls[i]);
+                for (var j = 0; j < props.length; j++) {
+                    var val = cs.getPropertyValue(props[j]);
+                    if (val) clnEls[i].style.setProperty(props[j], val);
+                }
+            }
+        }
+
+        function copyAsImage() {
+            var svg = wrapper.querySelector('svg');
+            if (!svg) return;
+            var copyBtn = document.getElementById('copy-image');
+            var origText = copyBtn.innerHTML;
+
+            var areaRect = area.getBoundingClientRect();
+            var dpr = window.devicePixelRatio || 1;
+            var cw = areaRect.width;
+            var ch = areaRect.height;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = cw * dpr;
+            canvas.height = ch * dpr;
+            var ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            var bg = window.getComputedStyle(document.body).backgroundColor || '#1e1e1e';
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.translate(panX, panY);
+            ctx.scale(scale, scale);
+
+            var clone = svg.cloneNode(true);
+            inlineStyles(svg, clone);
+            clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+            var svgData = new XMLSerializer().serializeToString(clone);
+            var svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+            var img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                var pngDataUrl = canvas.toDataURL('image/png');
+                vscode.postMessage({ type: 'copyImage', data: pngDataUrl });
+                copyBtn.textContent = 'Copied!';
+                setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500);
+            };
+            img.onerror = function() {
+                copyBtn.textContent = 'Failed';
+                setTimeout(function(){ copyBtn.innerHTML = origText; }, 1500);
+            };
+            img.src = svgDataUrl;
+        }
+
+        var vscode = acquireVsCodeApi();
+        document.getElementById('layout-toggle').addEventListener('click', function() {
+            var btn = document.getElementById('layout-toggle');
+            var next = btn.textContent.trim() === 'dagre' ? 'elk' : 'dagre';
+            btn.textContent = next;
+            vscode.postMessage({ type: 'setLayout', value: next });
+        });
+
+        document.getElementById('copy-image').addEventListener('click', copyAsImage);
 
         setTimeout(fitToView, 150);
     })();

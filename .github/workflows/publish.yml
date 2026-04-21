@@ -1,0 +1,68 @@
+name: Publish Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        required: true
+        type: choice
+        options:
+          - vscode-marketplace
+          - open-vsx
+          - both
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - run: npm run compile
+
+      - run: npx vsce package --out extension.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-vsix
+          path: extension.vsix
+
+  publish-vscode-marketplace:
+    needs: build
+    if: inputs.target == 'vscode-marketplace' || inputs.target == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-vsix
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npx vsce publish --packagePath extension.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+  publish-open-vsx:
+    needs: build
+    if: inputs.target == 'open-vsx' || inputs.target == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-vsix
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npx ovsx publish extension.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}

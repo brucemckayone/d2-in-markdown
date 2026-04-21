@@ -2,7 +2,7 @@
   "name": "d2-in-markdown",
   "displayName": "D2 in Markdown",
   "description": "Render D2 diagrams in VS Code Markdown preview",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "brucermckay",
   "engines": {
     "vscode": "^1.80.0"
@@ -109,10 +109,6 @@
       {
         "command": "d2.exportDiagram",
         "title": "D2: Export Diagram"
-      },
-      {
-        "command": "d2.openPlayground",
-        "title": "D2: Open in Playground"
       },
       {
         "command": "d2.openPreview",
