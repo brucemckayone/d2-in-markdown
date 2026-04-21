@@ -125,6 +125,44 @@ Phase5: "5. Validate Secret Configuration" {
 }
 
 # === 6. RETURN COMPLETE CONFIG ===
+
+## Layout Engine Comparison
+
+This diagram renders differently between dagre and elk.
+Switch via `Ctrl+Shift+P` → `D2: Configure Renderer` → `Change Layout Engine`.
+
+```d2
+direction: right
+
+api_gateway: API Gateway
+
+backend: Backend Services {
+  auth: Auth Service
+  users: User Service
+  products: Product Service
+}
+
+database: Databases {
+  users_db: Users DB
+  products_db: Products DB
+}
+
+cache: Cache Layer {
+  redis: Redis
+  memcached: Memcached
+}
+
+api_gateway -> backend.auth: authenticate
+api_gateway -> backend.users: get users
+api_gateway -> backend.products: list products
+
+backend.auth -> cache.redis: cache tokens
+backend.users -> database.users_db: query
+backend.products -> database.products_db: query
+backend.users -> cache.memcached: cache results
+
+cache.redis -> database.users_db: invalidate
+```
 Phase6: "6. Configuration Complete" {
   style.font-size: 36
   

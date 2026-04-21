@@ -49,6 +49,17 @@
 .d2-fullscreen-btn {
     margin-left: auto;
 }
+.d2-layout-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #888);
+    background: var(--vscode-badge-background, #4d4d4d);
+    color: var(--vscode-badge-foreground, #fff);
+    padding: 1px 6px;
+    border-radius: 3px;
+    cursor: default;
+    user-select: none;
+    margin-left: 4px;
+}
 .d2-diagram.d2-fullscreen {
     position: fixed;
     top: 0;
@@ -60,6 +71,44 @@
     border-radius: 0;
     z-index: 9999;
     background: var(--vscode-editor-background, #1e1e1e);
+}
+
+/* D2 error display */
+.d2-error {
+    color: var(--vscode-errorForeground, red);
+    border: 1px solid var(--vscode-errorForeground, red);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 16px 0;
+    position: relative;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.d2-error pre {
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    background: var(--vscode-textBlockQuote-background, rgba(127,127,127,0.1));
+    padding: 8px;
+    border-radius: 3px;
+}
+.d2-copy-error-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--vscode-button-secondaryBackground, #e0e0e0);
+    color: var(--vscode-button-secondaryForeground, #333);
+    border: none;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    line-height: 1.4;
+}
+.d2-copy-error-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground, #ccc);
 }
 
 /* Auto-theme: override D2 color classes with VS Code theme variables */
